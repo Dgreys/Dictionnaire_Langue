@@ -1,24 +1,23 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+
 """
 Created on Wed Apr 14 15:37:22 2021
 
 @author: Dgrey
 """
 
-
-from sys import exc_info, maxsize
+from __future__ import unicode_literals
 import tkinter as tk
-from tkinter import Toplevel, ttk
-from tkinter import messagebox
-from tkinter import filedialog
-from tkinter.colorchooser import askcolor
+from tkinter import ttk
 import os
 import random
 import re
-
 import logging
-from logging.handlers import RotatingFileHandler
-from typing import Sized
+import locale
+import sys
+from codecs import open
 
 
 
@@ -54,6 +53,23 @@ logger.addHandler(handler_debug)
 
 
 
+try :
+    with open("Dico_init.txt", "w", encoding="utf-8") as f :
+        f.write(f"getfilesystemencoding : {sys.getfilesystemencoding()}\n")
+        f.write(f"getlocale : {locale.getlocale()}\n")
+
+        for key, value in locale.localeconv().items() :
+            f.write(f"{key} = {value}\n")
+
+        f.close()
+
+except Exception as e :
+    logger.warning(msg = f"Erreur ecriture init about encoding : {str(e)}")
+
+
+
+
+
 
 class Application(tk.Frame):
     def __init__(self, master=None):
@@ -70,8 +86,11 @@ class Application(tk.Frame):
         self.master.geometry(f"600x400+{x}+{y}")
         self.master.resizable(False, False)
        
-        self.path_dossier = os.getcwd()
-        
+        try :
+            self.path_dossier = os.getcwd()
+        except Exception as e :
+            logger.critical(msg = f"Error get path : {str(e)}")
+            
         try :
             self.nom_icon = os.path.join(self.path_dossier, "Icon.ico")
             self.master.iconbitmap(False, self.nom_icon)
@@ -593,7 +612,7 @@ class Application(tk.Frame):
     def update_language(self, event) :
         self.language = []
         try :            
-            f = open(os.path.join(self.path_dossier, "Langue.txt"), "r")
+            f = open(os.path.join(self.path_dossier, "Langue.txt"), "r", encoding = "utf-8")
             txt = f.read()
             f.close()
             
@@ -608,7 +627,7 @@ class Application(tk.Frame):
             
         except Exception as e :
             logger.info(msg = f"Fichier langue inexistant pendant update : {str(e)}")
-            f = open("Langue.txt", "w")
+            f = open("Langue.txt", "w", encoding = "utf-8")
             f.close()
 
         for abre, nom in self.dico_listbox_langue.items():
@@ -920,11 +939,14 @@ class New_Trad(tk.Tk) :
     def toplevel_valider(self) :
         if self.entry_toplevel_abre_lang.get() != "" and self.var_entry_toplevel_nom_lang.get() != "" :
             if self.check_verif_exist(dico_listbox_langue = self.dico_listbox_langue, entry_toplevel_abre_lang = self.entry_toplevel_abre_lang.get(), var_entry_toplevel_nom_lang = self.var_entry_toplevel_nom_lang.get() ) != True :
-                f = open(os.path.join(self.path_dossier, "Langue.txt"), "a")
-                string = self.entry_toplevel_abre_lang.get() + ":" + self.var_entry_toplevel_nom_lang.get() + "\n"
-                f.write(string)
-                f.close()
-                
+                try :
+                    f = open(os.path.join(self.path_dossier, "Langue.txt"), "a", encoding = "utf-8")
+                    string = self.entry_toplevel_abre_lang.get() + ":" + self.var_entry_toplevel_nom_lang.get() + "\n"
+                    f.write(string.lower())
+                    f.close()
+                except Exception as e :
+                    logger.info(msg = f"Inexistant, ajout dico langue : {str(e)}")
+            
                 self.reload_langue()
             
             else :
@@ -1010,18 +1032,18 @@ class Manage_File(tk.Tk) :
 
     def load_init(self) :
         try :
-            f = open(os.path.join(self.path_dossier, "Dico_init.txt"), "r")
+            f = open(os.path.join(self.path_dossier, "Dico_init.txt"), "r", encoding = "utf-8")
             txt = f.read().split("\n")
             f.close()
         except Exception as e :
             logger.info(msg = f"Inexistant, création dico init : {str(e)}")
-            f = open("Dico_init.txt", "w")
+            f = open("Dico_init.txt", "w", encoding = "utf-8")
             f.close()
 
 
     def load_langue(self) :
         try :            
-            f = open(os.path.join(self.path_dossier, "Langue.txt"), "r")
+            f = open(os.path.join(self.path_dossier, "Langue.txt"), "r", encoding = "utf-8")
             txt = f.read()
             f.close()
             
@@ -1036,7 +1058,7 @@ class Manage_File(tk.Tk) :
             
         except Exception as e :
             logger.info(msg = f"Inexistant, création fichier langue : {str(e)}")
-            f = open("Langue.txt", "w")
+            f = open("Langue.txt", "w", encoding = "utf-8")
             f.close()
 
         
@@ -1048,7 +1070,7 @@ class Manage_File(tk.Tk) :
 
     def load_dictionnaire(self) :
         try :
-            f = open(os.path.join(self.path_dossier, "Dictionnaire.txt"), "r")
+            f = open(os.path.join(self.path_dossier, "Dictionnaire.txt"), "r", encoding = "utf-8")
             txt = f.read()
             f.close()
             
@@ -1063,7 +1085,7 @@ class Manage_File(tk.Tk) :
                         libelle = k[1]
                         
                         try :
-                            libelle = re.sub(r"\\n", "\n", libelle)
+                            libelle = re.sub(r"\\n", "\n", libelle, re.UNICODE)
                         except Exception as e :
                             logger.error(msg = f"Regex : {str(e)}")
 
@@ -1086,7 +1108,7 @@ class Manage_File(tk.Tk) :
             
         except Exception as e :
             logger.info(msg = f"Inexistant, créatiion fichier Dictionnaire : {str(e)}")
-            f = open("Dictionnaire.txt", "w")
+            f = open("Dictionnaire.txt", "w", encoding = "utf-8")
             f.close()
 
 
@@ -1106,11 +1128,15 @@ class Manage_File(tk.Tk) :
                 abre_trad = name
         
         string = abre_lang + ":" + mot_select + "|" + abre_trad + ":" + mot_trad
+        string = string.lower()
         string = string + "\n" + comment
         
-        f = open(os.path.join(self.path_dossier, "Dictionnaire.txt"), "a")
-        f.write(string + "\n\n")
-        f.close()
+        try :
+            f = open(os.path.join(self.path_dossier, "Dictionnaire.txt"), "a", encoding = "utf-8")
+            f.write(string + "\n\n")
+            f.close()
+        except Exception as e :
+            logger.info(msg = f"Inexistant, ajout dico dictionnaire : {str(e)}")
             
 
 
@@ -1412,9 +1438,13 @@ class Edit(tk.Tk) :
          
      
     def identify_language(self, langue) :
-        f = open(os.path.join(self.path_dossier, "Langue.txt"), "r")
-        txt = f.read()
-        f.close()
+        try :
+            f = open(os.path.join(self.path_dossier, "Langue.txt"), "r", encoding = "utf-8")
+            txt = f.read()
+            f.close()
+        except Exception as e :
+            logger.info(msg = f"Inexistant, identify langue : {str(e)}")
+            
         
         txt = txt.split("\n")
         
@@ -1495,13 +1525,18 @@ class Edit(tk.Tk) :
                 txt += ":"
                 txt += dic["mot"][k]
             
+            txt = txt.lower()
             txt += "\n"
             txt += dic["libelle"][0]
             txt += "\n\n"        
         
-        f = open(os.path.join(self.path_dossier, "Dictionnaire.txt"), "w")
-        f.write(txt)
-        f.close()
+        try :
+            f = open(os.path.join(self.path_dossier, "Dictionnaire.txt"), "w", encoding = "utf-8")
+            f.write(txt)
+            f.close()
+        except Exception as e :
+            logger.info(msg = f"Inexistant, création dico init : {str(e)}")
+            
 
      
     def up_comment(self) :
@@ -1594,7 +1629,7 @@ class Edit(tk.Tk) :
     def update_language(self, event) :
         self.language = []
         try :            
-            f = open(os.path.join(self.path_dossier, "Langue.txt"), "r")
+            f = open(os.path.join(self.path_dossier, "Langue.txt"), "r", encoding = "utf-8")
             txt = f.read()
             f.close()
             
@@ -1609,7 +1644,7 @@ class Edit(tk.Tk) :
             
         except Exception as e :
             logger.info(msg = f"Update, fichier inexistant, création fichier langue : {str(e)}")
-            f = open("Langue.txt", "w")
+            f = open("Langue.txt", "w", encoding = "utf-8")
             f.close()
 
         
